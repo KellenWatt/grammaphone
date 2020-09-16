@@ -1,0 +1,9 @@
+# RubyGems files
+*.gem
+
+# vim swapfiles
+*.swp
+*.swo
+
+# custom backup format
+.*.*
