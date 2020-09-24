@@ -1,5 +1,5 @@
 Gem::Specification.new do |s|
-  s.name = "Grammaphone"
+  s.name = "grammaphone"
   s.version = "0.1.0"
   s.date = "2020-09-15"
   s.license = "MIT"
