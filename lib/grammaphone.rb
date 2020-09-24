@@ -1,3 +1,7 @@
+require_relative "grammaphone/errors"
+require_relative "grammaphone/tokens"
+require_relative "grammaphone/rule"
+
 # Grammaphone is a dynamically-definable parser pseudo-generator based on a 
 # BNF-like grammar.
 #
@@ -60,18 +64,29 @@
 #
 # Note that to match a space, you need to use the pattern, since the splitting function 
 # for rules splits on the space character, regardless of where it is.
-
-require_relative "grammaphone/errors"
-require_relative "grammaphone/tokens"
-require_relative "grammaphone/rule"
-
 class Grammaphone
 
+  # Creates a TokenStream instance using `split_method` as the function to 
+  # split `src` into tokens. 
+  #
+  # `split_method` is expected to take a String and return an Array of Strings.
   def self.tokenize(src, &split_method)
     TokenStream.new(src, &split_method)
   end
 
-  # node_type must accept a 
+  # Creates a new instance of Grammaphone. 
+  #
+  # `rules` is a Hash containing the rules of the grammar, as defined above.
+  #
+  # `node_type` must be a class that responds to <<. By default, this is Array.
+  #
+  # `default_action` is the method called on the results of a rule being matched.
+  # This function is passed the results of the rule matching, which is an instance 
+  # of `node_type`, and the name of the rule matched. By default, this is the 
+  # identity function, returning the input node.
+  #
+  # The results of the action are included in the output instead of the input 
+  # instance of `node_type`.
   def initialize(rules = {}, node_type = Array, &default_action)
     raise ArgumentError.new("cannot form parser from a #{rules.class}") unless rules.kind_of? Hash
     raise ArgumentError.new("syntax tree type must respond to <<") unless node_type.method_defined?(:"<<")
@@ -82,6 +97,13 @@ class Grammaphone
     end
   end
 
+  # Adds a rule with a single rule to the grammar, using the associated action, 
+  # replacing existing the rule if there is a conflict.
+  #
+  # `action` is the method called on the results of the rule being matched.
+  # This function is passed the results of the rule matching, which is an instance 
+  # of `node_type`, and the name of the rule matched. By default, this is the 
+  # identity function, returning the input node.
   def add_rule(name, rule, &action)
     m = @rules.find {|r| r.name == name}
     action = @default_action if action.nil?
@@ -93,10 +115,20 @@ class Grammaphone
     end
   end
 
+  # Returns a Hash containint  a representation of existing rules. This does 
+  # not provide access to the underlying rules.
   def rules
     @rules.map{|r| [r.name, r.rule]}.to_h
   end
 
+  # Runs the grammar on the given token stream. If `token_stream` is not a 
+  # TokenStream instance, then a new TokenStream instance is created.
+  #
+  # The initial rule is the first rule added, either from the initial Hash or 
+  # the first call to `add_rule`.
+  #
+  # If the ruleset is empty when `parse` is called, an EmptyRulesetError is 
+  # raised.
   def parse(token_stream)
     token_stream = TokenStream.new(token_stream) unless token_stream.kind_of?(TokenStream)
     raise EmptyRulesetError if @rules.size == 0
@@ -104,6 +136,8 @@ class Grammaphone
     res
   end
 
+  # Runs the specified rule. Useful for testing purposes.
+  #
   # Not to be released in shipped version
   def test(name, token_stream)
     self.send(name, TokenStream.new(token_stream))

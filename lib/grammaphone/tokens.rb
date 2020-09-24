@@ -7,6 +7,17 @@ class Grammaphone
     # This doesn't need to be here, but it could potentially be useful
     include Enumerable
 
+    # Creates a new instance of TokenStream, using the data from `tokens`. If
+    # `tokens` is a String, it's split using `split_method`, which takes a 
+    # String and returns an Array. if `split_method` isn't provided, then 
+    # `String#split` is called on `tokens`, using the space character as the 
+    # separator.
+    #
+    # If `tokens` is an Array of Strings, the Array is duplicated, and used 
+    # directly.
+    #
+    # If `tokens` is not a String or Array, then `to_a` is called on `tokens` 
+    # and the result is used as the token stream.
     def initialize(tokens, &split_method)
       case tokens
       when String
@@ -16,6 +27,7 @@ class Grammaphone
           @enum = split_method.call(tokens).to_a
         end
       when Array
+        raise TokenStreamError unless tokens.all?{|t| t.kind_of?(String)}
         @enum = tokens.dup
       else
         raise TokenStreamError unless tokens.respond_to?(:to_a)
@@ -110,29 +122,50 @@ class Grammaphone
     end
   end
 
+  # Token contains methods that classify what kind of element type a specific 
+  # rule pattern is.
   module Token
+    # The prefix used to denote a literal element.
     LITERAL_PREFIX = "\""
 
+    # Checks if an element expects a literal value. A literal element is 
+    # denoted by being prefixed by the value of `LITERAL_PREFIX`.
     def self.literal?(token)
       token[0] == LITERAL_PREFIX
     end
 
+    # Removes the denotative marks of a literal, and returns the resulting value.
     def self.clean_literal(token)
       token[1..]
     end
 
+    # Returns whether the token is described by the element and that the 
+    # element is a literal.
+    #
+    # Returns `false` if the token is `nil`, since it's impossible to match a 
+    # literal `nil`. Note, `nil` differs from an empty token.
     def self.matches_literal?(element, token)
       !token.nil? && literal?(element) && token == clean_literal(element)
     end
 
+    # Checks if an element expects a pattern value. A pattern element is 
+    # denoted by being surrounded by forward slashes.
     def self.pattern?(token)
       token[0] == "/" && token[-1] == "/"
     end
 
+    # Removes the denotative marks of a pattern, and returns a Regexp that 
+    # matches the pattern exactly. That is, the pattern describes the 
+    # whole token, and nothing less.
     def self.clean_pattern(token)
       /\A#{token[1...-1]}\Z/
     end
 
+    # Returns whether the token is described by the element and that the 
+    # element is a pattern.
+    #
+    # Returns `false` if the token is `nil`, and the pattern doesn't match 
+    # the empty string.
     def self.matches_pattern?(element, token)
       pattern?(element) && (token =~ clean_pattern(element)) ||
         token.nil? && "" =~ clean_pattern(element)
