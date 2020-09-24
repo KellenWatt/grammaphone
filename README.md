@@ -1,7 +1,7 @@
 # Grammaphone
-A BNF grammar-based parser.
+A BNF-adjascent based parser.
 
-No, it isn't spelled wrong. Grammaphone is a parser based strictly on the idea 
-of parsing strictly based on a grammar, and not having any sort of intermediate 
+No, it isn't spelled wrong. Grammaphone is a parser  built on the idea of 
+parsing strictly based on a grammar, and not having any sort of intermediate 
 generation. This is significantly slower than generated parsers, but also 
-simpler to inject in a toolchain.
+simpler and cleaner to inject in a Ruby toolchain.
