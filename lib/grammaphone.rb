@@ -163,11 +163,11 @@ class Grammaphone
  
   def match_rule(r, stream, result_type)
     # This is an enormous function. It needs to be pared down
-    matches = nil
+    matches = []
     result = result_type.new
     r.each do |option|
-      tokens = stream.dup
       break if option.empty?
+      tokens = stream.dup
       matched = true
 
       option.each do |element|
@@ -180,34 +180,33 @@ class Grammaphone
             break
           end
 
-          matches ||= []
           matches << token
           result << token
           tokens.next # might as well be tokens.skip
         elsif Token.pattern?(element) # only matches empty tokens at the end
-          unless Token.matches_pattern?(element, token)
+          if Token.matches_pattern?(element, token)
+            matches << token
+            result << token unless token.nil? # check might not be necessary
+            tokens.next
+          elsif Token.matches_pattern?(element, "")
+            matches << nil
+          else
             matches = nil
             matched = false
             break
           end
-
-          matches ||= []
-          matches << token
-          result << token unless token.nil? 
-          tokens.next
-        elsif Token.backref?(element) # exists but buggy as hell
+        elsif Token.backref?(element)
           unless Token.matches_backref?(element, token, matches)
             matches = nil
             matched = false
             break
           end
 
-          matches ||= []
           matches << token
           result << token unless token.nil?
           tokens.next
         else
-          raise TokenError.new("Can't have empty patterns") if element.empty?
+          raise TokenError.new("Can't have empty rule elements") if element.empty?
 
           submatches, res = self.send(element, tokens, result_type)
           unless submatches
@@ -216,14 +215,13 @@ class Grammaphone
             break
           end
 
-          matches ||= []
           matches << submatches
           result << res
           tokens.skip([submatches.size, 1].max)
         end
       end
 
-      matches&.keep_if {|m| !m.nil?}
+      matches&.delete_if {|m| m.nil?}
       if matched
         result = r.trigger(result)
         break
