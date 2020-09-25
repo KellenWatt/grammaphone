@@ -184,7 +184,7 @@ class Grammaphone
           matches << token
           result << token
           tokens.next # might as well be tokens.skip
-        elsif Token.pattern?(element)
+        elsif Token.pattern?(element) # only matches empty tokens at the end
           unless Token.matches_pattern?(element, token)
             matches = nil
             matched = false
@@ -192,10 +192,19 @@ class Grammaphone
           end
 
           matches ||= []
-          unless token.nil?
-            matches << token
-            result << token
+          matches << token
+          result << token unless token.nil? 
+          tokens.next
+        elsif Token.backref?(element) # exists but buggy as hell
+          unless Token.matches_backref?(element, token, matches)
+            matches = nil
+            matched = false
+            break
           end
+
+          matches ||= []
+          matches << token
+          result << token unless token.nil?
           tokens.next
         else
           raise TokenError.new("Can't have empty patterns") if element.empty?
@@ -214,6 +223,7 @@ class Grammaphone
         end
       end
 
+      matches&.keep_if {|m| !m.nil?}
       if matched
         result = r.trigger(result)
         break

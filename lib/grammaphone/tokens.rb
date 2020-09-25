@@ -170,5 +170,29 @@ class Grammaphone
       pattern?(element) && (token =~ clean_pattern(element)) ||
         token.nil? && "" =~ clean_pattern(element)
     end
+
+    # Checks if an element expects a backreference. A backreference is prefixed 
+    # by an equals sign ("=")
+    def self.backref?(element)
+      element[0] == "=" 
+    end
+
+    # Removes the denotative marks of a backreference, and returns a literal 
+    # token that references a previous element referenced. The token is the 
+    # exact token matched, regardless of if the original element was a literal 
+    # or pattern.
+    def self.clean_backref(element, matches)
+      matches[element[1..].to_i - 1]
+    end
+
+    # Returns whether the token is described by the element and that the 
+    # element is a backreference. A token is described by a backreference if 
+    # it matches the element at the 1-indexed position exactly.
+    #
+    # A backreference cannot describe a rule, even if that rule describes 1 or 
+    # fewer tokens.
+    def self.matches_backref?(element, token, matches)
+      !token.nil? && backref?(element) && token == clean_backref(element, matches) 
+    end
   end
 end
