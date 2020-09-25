@@ -136,7 +136,7 @@ class Grammaphone
 
     # Removes the denotative marks of a literal, and returns the resulting value.
     def self.clean_literal(token)
-      token[1..]
+      token[1..] if token.size > 1
     end
 
     # Returns whether the token is described by the element and that the 
@@ -172,7 +172,7 @@ class Grammaphone
     end
 
     # Checks if an element expects a backreference. A backreference is prefixed 
-    # by an equals sign ("=")
+    # by an equals sign ("=").
     def self.backref?(element)
       element[0] == "=" 
     end
@@ -189,10 +189,13 @@ class Grammaphone
     # element is a backreference. A token is described by a backreference if 
     # it matches the element at the 1-indexed position exactly.
     #
+    # Note that a backreference can refer to an empty token if it refers to a 
+    # pattern that was an empty match.
+    #
     # A backreference cannot describe a rule, even if that rule describes 1 or 
     # fewer tokens.
     def self.matches_backref?(element, token, matches)
-      !token.nil? && backref?(element) && token == clean_backref(element, matches) 
+      backref?(element) && token == clean_backref(element, matches) 
     end
   end
 end
